@@ -42,7 +42,7 @@ class RegistrationController extends AbstractController
             );
             //Tworzenie maila użytkownika
             $user->setEmail($form->get('email')->getData());
-            $user->setRoles(['role-user']);
+            $user->setRoles(['ROLE_USER']);
 
             $entityManager = $this->getDoctrine()->getManager();
             $entityManager->persist($user);
@@ -57,15 +57,17 @@ class RegistrationController extends AbstractController
                     ->subject('Please Confirm your Email')
                     ->htmlTemplate('registration/confirmation_email.html.twig')
             );
-            die;
             // do anything else you need here, like send an email
 
             return $this->json(['result' => 'success'], 200);
         }
 
-        // return $this->render('registration/register.html.twig', [
-        //     'registrationForm' => $form->createView(),
-        // ]);
+        $errorArray = [];
+        foreach ($form->getErrors(true) as $formError) {
+            array_push($errorArray, $formError->getMessage());
+        }
+
+        return $this->json($errorArray, 400);
     }
 
     /**
