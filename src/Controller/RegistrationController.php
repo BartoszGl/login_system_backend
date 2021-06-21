@@ -24,7 +24,7 @@ class RegistrationController extends AbstractController
     }
 
     /**
-     * @Route("/api/register", name="app_register")
+     * @Route("/api/register", name="app_register",  methods={"POST"})
      */
     public function register(Request $request, UserPasswordEncoderInterface $passwordEncoder): Response
     {
@@ -32,6 +32,7 @@ class RegistrationController extends AbstractController
         $user = new User();
         $form = $this->createForm(RegistrationFormType::class, $user);
         $form->submit($data);
+
         if ($form->isSubmitted() && $form->isValid()) {
             // Szyfrowanie hasła
             $user->setPassword(
@@ -71,7 +72,7 @@ class RegistrationController extends AbstractController
     }
 
     /**
-     * @Route("/verify/email", name="app_verify_email")
+     * @Route("/api/verify/email", name="app_verify_email",  methods={"POST"})
      */
     public function verifyUserEmail(Request $request): Response
     {
@@ -84,14 +85,9 @@ class RegistrationController extends AbstractController
         try {
             $this->emailVerifier->handleEmailConfirmation($request, $this->getUser());
         } catch (VerifyEmailExceptionInterface $exception) {
-            $this->addFlash('verify_email_error', $exception->getReason());
-
-            return $this->redirectToRoute('app_register');
+            return $this->json($exception->getReason(), 401);
         }
 
-        // @TODO Change the redirect on success and handle or remove the flash message in your templates
-        $this->addFlash('success', 'Your email address has been verified.');
-
-        return $this->redirectToRoute('app_register');
+        return $this->json('Your email address has been verified.');
     }
 }

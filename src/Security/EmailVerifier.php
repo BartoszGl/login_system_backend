@@ -2,6 +2,8 @@
 
 namespace App\Security;
 
+date_default_timezone_set("Europe/Berlin");
+
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\HttpFoundation\Request;
@@ -10,18 +12,28 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use SymfonyCasts\Bundle\VerifyEmail\Exception\VerifyEmailExceptionInterface;
 use SymfonyCasts\Bundle\VerifyEmail\VerifyEmailHelperInterface;
 use App\Entity\User;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class EmailVerifier
 {
     private $verifyEmailHelper;
     private $mailer;
     private $entityManager;
+    private $uiUrl;
+    private $backendUrl;
 
-    public function __construct(VerifyEmailHelperInterface $helper, MailerInterface $mailer, EntityManagerInterface $manager)
-    {
+    public function __construct(
+        VerifyEmailHelperInterface $helper,
+        MailerInterface $mailer,
+        EntityManagerInterface $manager,
+        string $uiUrl,
+        string $backendUrl
+    ) {
         $this->verifyEmailHelper = $helper;
         $this->mailer = $mailer;
         $this->entityManager = $manager;
+        $this->uiUrl = $uiUrl;
+        $this->backendUrl = $backendUrl;
     }
 
     public function sendEmailConfirmation(string $verifyEmailRouteName, User $user, TemplatedEmail $email): void
@@ -31,9 +43,9 @@ class EmailVerifier
             $user->getId(),
             $user->getEmail()
         );
-
+        dump(time());
         $context = $email->getContext();
-        $context['signedUrl'] = $signatureComponents->getSignedUrl();
+        $context['signedUrl'] = str_replace($this->backendUrl . '/api', $this->uiUrl, $signatureComponents->getSignedUrl());
         $context['expiresAtMessageKey'] = $signatureComponents->getExpirationMessageKey();
         $context['expiresAtMessageData'] = $signatureComponents->getExpirationMessageData();
 
@@ -47,8 +59,8 @@ class EmailVerifier
      */
     public function handleEmailConfirmation(Request $request, User $user): void
     {
-        $this->verifyEmailHelper->validateEmailConfirmation($request->getUri(), $user->getId(), $user->getEmail());
 
+        $this->verifyEmailHelper->validateEmailConfirmation($request->getUri(), $user->getId(), $user->getEmail());
         $user->setIsVerified(true);
 
         $this->entityManager->persist($user);

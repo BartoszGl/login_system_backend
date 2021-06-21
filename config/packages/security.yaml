@@ -45,4 +45,4 @@ security:
         - { path: ^/api/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
         - { path: ^/api/register, roles: IS_AUTHENTICATED_ANONYMOUSLY }
         - { path: ^/api/users-list,       roles: ROLE_ADMIN }
-        - { path: ^/api,       roles: ROLE_USER }
+        - { path: ^/api,       roles: IS_AUTHENTICATED_ANONYMOUSLY }
