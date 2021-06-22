@@ -13,27 +13,28 @@ use SymfonyCasts\Bundle\VerifyEmail\Exception\VerifyEmailExceptionInterface;
 use SymfonyCasts\Bundle\VerifyEmail\VerifyEmailHelperInterface;
 use App\Entity\User;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpKernel\KernelInterface;
 
 class EmailVerifier
 {
     private $verifyEmailHelper;
     private $mailer;
     private $entityManager;
-    private $uiUrl;
-    private $backendUrl;
+    private $appUrl;
+    private $kernel;
 
     public function __construct(
         VerifyEmailHelperInterface $helper,
         MailerInterface $mailer,
         EntityManagerInterface $manager,
-        string $uiUrl,
-        string $backendUrl
+        array $appUrl,
+        KernelInterface $kernel
     ) {
         $this->verifyEmailHelper = $helper;
         $this->mailer = $mailer;
         $this->entityManager = $manager;
-        $this->uiUrl = $uiUrl;
-        $this->backendUrl = $backendUrl;
+        $this->appUrl = $appUrl;
+        $this->kernel = $kernel;
     }
 
     public function sendEmailConfirmation(string $verifyEmailRouteName, User $user, TemplatedEmail $email): void
@@ -43,9 +44,8 @@ class EmailVerifier
             $user->getId(),
             $user->getEmail()
         );
-        dump(time());
         $context = $email->getContext();
-        $context['signedUrl'] = str_replace($this->backendUrl . '/api', $this->uiUrl, $signatureComponents->getSignedUrl());
+        $context['signedUrl'] = $this->modifyHost($signatureComponents->getSignedUrl());
         $context['expiresAtMessageKey'] = $signatureComponents->getExpirationMessageKey();
         $context['expiresAtMessageData'] = $signatureComponents->getExpirationMessageData();
 
@@ -65,5 +65,11 @@ class EmailVerifier
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+    }
+
+    public function modifyHost(string $url): string
+    {
+        $env = $this->kernel->getEnvironment();
+        return str_replace($this->appUrl["backend_" . $env] . '/api', $this->appUrl["front_" . $env], $url);
     }
 }

@@ -9,6 +9,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class UserController extends AbstractController
 {
+    //TODO: stwórz logowanie błędnych loginów w bazie danych!!
     /**
      * @Route("/api/current-user", name="current_user",  methods={"GET"})
      */
@@ -17,12 +18,14 @@ class UserController extends AbstractController
         $user = $this->getUser();
         $userData = [
             'email' => $user->getEmail(),
-            'roles' => $user->getRoles()
+            'roles' => $user->getRoles(),
+            'isVerified' => $user->isVerified()
         ];
         return $this->json($userData, 200);
     }
 
     /**
+     *
      * @Route("/api/users-list", name="users_list",  methods={"GET"})
      */
     public function getUsersList()
