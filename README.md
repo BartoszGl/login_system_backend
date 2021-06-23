@@ -6,6 +6,8 @@ composer install
 
 symfony server:start --no-tls
 
+php bin/console lexik:jwt:generate-keypair
+
 System został napisany z użyciem stacku Symfony + Mysql.
 Zaimplementowano autentykację za pomocą JWT, wykorzystana biblioteka to https://github.com/lexik/LexikJWTAuthenticationBundle
 
