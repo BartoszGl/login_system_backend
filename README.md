@@ -2,6 +2,7 @@
 
 W celu uruchomienia wykonać:
 composer install
+
 symfony server:start --no-tls
 
 System został napisany z użyciem stacku Symfony + Mysql.
