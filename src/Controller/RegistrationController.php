@@ -7,6 +7,7 @@ use App\Form\RegistrationFormType;
 use App\Security\EmailVerifier;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mime\Address;
@@ -24,16 +25,25 @@ class RegistrationController extends AbstractController
     }
 
     /**
+     * Rejestracja użytkownika
      * @Route("/api/register", name="app_register",  methods={"POST"})
+     * @param Request $request
+     * @param UserPasswordEncoderInterface $passwordEncoder
+     * 
+     * @return JsonResponse
      */
-    public function register(Request $request, UserPasswordEncoderInterface $passwordEncoder): Response
+    public function register(Request $request, UserPasswordEncoderInterface $passwordEncoder): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
+
+        //Tworzenie formularza użytkownika, składa się na niego email użytkownika i jego hasło
         $user = new User();
         $form = $this->createForm(RegistrationFormType::class, $user);
         $form->submit($data);
 
+        //Sprawdzam czy wysłany mail i hasło są poprawne
         if ($form->isSubmitted() && $form->isValid()) {
+
             // Szyfrowanie hasła
             $user->setPassword(
                 $passwordEncoder->encodePassword(
@@ -41,14 +51,17 @@ class RegistrationController extends AbstractController
                     $form->get('password')->getData()
                 )
             );
+
             //Tworzenie maila użytkownika
             $user->setEmail($form->get('email')->getData());
             $user->setRoles(['ROLE_USER']);
 
+            //Zapisywanie danych w bazie
             $entityManager = $this->getDoctrine()->getManager();
             $entityManager->persist($user);
             $entityManager->flush();
-            // generate a signed url and email it to the user
+
+            //Stworzenie maila z syganturą, który zostanie następnie wysłany do użytkownika
             $this->emailVerifier->sendEmailConfirmation(
                 'app_verify_email',
                 $user,
@@ -58,30 +71,30 @@ class RegistrationController extends AbstractController
                     ->subject('Please Confirm your Email')
                     ->htmlTemplate('registration/confirmation_email.html.twig')
             );
-            // do anything else you need here, like send an email
 
-            return $this->json(['result' => 'success'], 200);
+            return $this->json(['result' => 'We have sent a confirmation link to your mail'], 200);
         }
 
-        $errorArray = [];
+        //Zbieram błędy które powstały w trakcie tworzenia formularza i wysyłam response
+        $errors = '';
         foreach ($form->getErrors(true) as $formError) {
-            array_push($errorArray, $formError->getMessage());
+            $errors .= $formError->getMessage() . "\n";
         }
 
-        return $this->json($errorArray, 400);
+        return $this->json($errors, 400);
     }
 
     /**
+     * Weryfikacja maila użytkownika
      * @Route("/api/verify/email", name="app_verify_email",  methods={"POST"})
+     * @param Request $request
+     * 
+     * @return JsonResponse
      */
-    public function verifyUserEmail(Request $request): Response
+    public function verifyUserEmail(Request $request): JsonResponse
     {
-
-        // https://github.com/SymfonyCasts/verify-email-bundle/issues/27
-
-        // $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
-        // validate email confirmation link, sets User::isVerified=true and persists
+        // Walidacja maila użytkownika, jeżeli się nie powiedzie to klient dostanie wiadomość z informacją o błędzie
+        // Ze względów bezpieczeństwa użytkownik musi się zalogować przed tym, jak będzie miał możliwość potwierdzenia swojego maila
         try {
             $this->emailVerifier->handleEmailConfirmation($request, $this->getUser());
         } catch (VerifyEmailExceptionInterface $exception) {

@@ -37,13 +37,23 @@ class EmailVerifier
         $this->kernel = $kernel;
     }
 
+    /**
+     * Wysyłanie emaila do użytkownika
+     * @param string $verifyEmailRouteName
+     * @param User $user
+     * @param TemplatedEmail $email
+     * 
+     * @return void
+     */
     public function sendEmailConfirmation(string $verifyEmailRouteName, User $user, TemplatedEmail $email): void
     {
+        //Stworzenie sygnatury wysyłanego maila na podstawie: linku do strony aktywującej, id użytkownika i jego maila
         $signatureComponents = $this->verifyEmailHelper->generateSignature(
             $verifyEmailRouteName,
             $user->getId(),
             $user->getEmail()
         );
+
         $context = $email->getContext();
         $context['signedUrl'] = $this->modifyHost($signatureComponents->getSignedUrl());
         $context['expiresAtMessageKey'] = $signatureComponents->getExpirationMessageKey();
@@ -55,18 +65,32 @@ class EmailVerifier
     }
 
     /**
+     * Walidacja maila użytkowinka
+     * @param Request $request
+     * @param User $user
+     * 
+     * @return void
      * @throws VerifyEmailExceptionInterface
      */
     public function handleEmailConfirmation(Request $request, User $user): void
     {
 
         $this->verifyEmailHelper->validateEmailConfirmation($request->getUri(), $user->getId(), $user->getEmail());
+
         $user->setIsVerified(true);
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
     }
 
+    /**
+     * Ze względu na to, że korzystam z zewnętrznej biblioteki do tworzenia "signed mail url", konieczna jest modyfikacja hosta w linku
+     * w emailu weryfikacyjnym, informacje o poszczególnych route na front/backend znajdują się w parametrach w service
+     * 
+     * @param string $url
+     * 
+     * @return string
+     */
     public function modifyHost(string $url): string
     {
         $env = $this->kernel->getEnvironment();

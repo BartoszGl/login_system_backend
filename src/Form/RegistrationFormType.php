@@ -14,26 +14,39 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 class RegistrationFormType extends AbstractType
 {
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    /**
+     * Tworzenie login form użytkownika, brak dokładnej walidacji maila i hasła ponieważ jest to wykonane już po stronie frontendu
+     * W prawdziwej produkcyjnej aplikacji stworzyłbym walidację zapewne również w tym miejscu
+     * @param FormBuilderInterface $builder
+     * @param array $options
+     * 
+     * @return Void
+     */
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('email')
             ->add('password', PasswordType::class, [
                 'mapped' => false,
-                'attr' => ['autocomplete' => 'new-password'],
                 'constraints' => [
                     new NotBlank([
-                        'message' => 'Message cannot be blank',
+                        'message' => 'Password cannot be blank',
                     ]),
                     new Length([
-                        // maksymalna długość 
+                        // Maksymalna długość hasła
                         'max' => 4096,
                     ]),
                 ],
             ]);
     }
 
-    public function configureOptions(OptionsResolver $resolver)
+    /**
+     * Konfiguracja form
+     * @param OptionsResolver $resolver
+     * 
+     * @return Void
+     */
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => User::class,
