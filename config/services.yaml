@@ -13,7 +13,7 @@ services:
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         bind:
             $appUrl: {front_dev: http://localhost:4200, 
-                      front_prod: http://localhost:4200,
+                      front_prod: http://54.38.158.205:9000,
                       backend_dev: http://localhost:8000,
                       backend_prod: http://54.38.158.205:8899,
                      }
